@@ -1,0 +1,69 @@
+# ── Public by design ─────────────────────────────────────────────────────────
+# Only the framework is published: .claude/skills/, .claude/templates/,
+# AGENTS.md, CLAUDE.md, README.md, LICENSE, Tasks/README.md,
+# Context/agent-config.example.md and .gitkeep placeholders.
+# Everything a skill generates or reads about the user stays local.
+
+# ── Personal data (never pushed to GitHub) ──────────────────────────────────
+# Whole folders, including every subfolder. Keep the .gitkeep placeholders.
+
+Tasks/**
+!Tasks/
+!Tasks/README.md
+!Tasks/**/
+!Tasks/**/.gitkeep
+
+Notes/**
+!Notes/
+!Notes/**/
+!Notes/**/.gitkeep
+
+Ideas/**
+!Ideas/
+!Ideas/**/
+!Ideas/**/.gitkeep
+
+Bookmarks/**
+!Bookmarks/
+!Bookmarks/**/
+!Bookmarks/**/.gitkeep
+
+Context/**
+!Context/
+!Context/**/
+!Context/**/.gitkeep
+!Context/agent-config.example.md
+
+# Root-level personal files (if they live at the root)
+GOALS.md
+BACKLOG.md
+Weekly Kanban.md
+*.personal.md
+
+# Stray documents and generated files anywhere outside .claude/
+*.docx
+*.pdf
+*.html
+!.claude/**/*.html
+
+# ── Claude Code per-machine settings ─────────────────────────────────────────
+.claude/settings.local.json
+.claude/worktrees/
+
+# ── IDE & Editor configs ─────────────────────────────────────────────────────
+.vscode/
+.idea/
+.obsidian/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Tool-specific ─────────────────────────────────────────────────────────────
+.specstory/
+.factory/
+.fuse_hidden*
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
