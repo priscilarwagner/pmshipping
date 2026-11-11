@@ -346,6 +346,12 @@ Branch naming convention:
 - `skill/<name>` — changes to `.claude/skills/`
 - `chore/<topic>` — AGENTS.md, config, or system updates
 
+### Pushing to GitHub
+The public repo is `origin` → `main` only. Before every push:
+1. `git status` — nothing personal staged (everything personal is gitignored).
+2. Scan the diff for names, emails, issue keys, company or project names. Skill examples use placeholders (`ENG-123`, `[Name]`).
+3. Push `main` only. Local-only branches (e.g. `archive/*`) are never pushed.
+
 ### Never push personal content
 Do not add git commands to skills that write personal files (meeting notes, tasks, memory, weekly wraps). Skills save files locally — that is enough. GitHub is not a backup system for personal data.
 
