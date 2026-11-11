@@ -1,9 +1,11 @@
 ---
 name: meeting-digest
-description: "Digest all meetings from a given day — uses Google Calendar as source of truth and the user's notes or transcripts as content. Extracts decisions, action items, and blockers, writes structured notes to Context/Meeting Notes/."
+description: "Digest all meetings from a given day — uses the calendar as source of truth and the configured meeting-notes sources as content. Extracts decisions, action items, and blockers, writes structured notes to Context/Meeting Notes/."
 ---
 
 # Meeting Digest
+
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
 
 Fetch all meetings for a target day, find the notes or transcript for each, produce a structured digest, and save it locally. The target day defaults to today; pass "yesterday" to process the prior day.
 
@@ -31,15 +33,11 @@ Run all steps in sequence. Do not ask for confirmation between steps unless expl
 
 1. Compute the target date in the user's timezone. Default = today; if the user passed "yesterday", subtract one day.
 
-2. Call Google Calendar `list_events` with:
-   - `startTime` = start of target date in local timezone (ISO 8601 with offset, e.g. `2026-05-18T00:00:00+10:00`)
-   - `endTime` = end of target date in local timezone (e.g. `2026-05-18T23:59:59+10:00`)
-   - `timeZone` = user's timezone
-   - `orderBy` = `startTime`
+2. `calendar.events(start of target date, end of target date)` in the user's timezone.
 
 3. **Filter to real meetings only.** Remove any event where:
    - `summary` matches a pattern in `calendar_exclusions`
-   - `eventType` is `focusTime` or `workingLocation`
+   - it is a focus-time or working-location block
    - `attendees` list is empty or contains only the user (solo blocks)
 
 4. **Sort chronologically** (oldest first). This is the ordered list of meetings to process.
@@ -59,8 +57,9 @@ For each meeting:
 Check sources in this order and use the first one that has content:
 
 1. **Raw notes file** — from Phase B step 4.
-1b. **Gemini notes** — if the calendar event has an attachment titled "Notes by Gemini" (or any Google Doc attachment with notes), read it with Google Drive `read_file_content` using the file ID from the attachment URL. If it returns "not found", the organiser hasn't shared it — skip silently.
-2. **Notion meeting note** — call `notion-query-meeting-notes` for the target date and match on title or time window (±30 min). Read it with `notion-fetch`.
+2. **Configured sources** — each entry in agent-config → **Meeting notes sources**, in order. Typical ones:
+   - *Calendar attachments* — a notes doc attached to the event → `files.read` with its file ID. "Not found" means it isn't shared with the user — skip silently
+   - `docs.meeting_notes(date)` — match on title or time window (±30 min); read with `docs.read`
 3. **Calendar event description** — use only if it contains real notes, not just an agenda or a video link.
 4. **Ask the user** — list the meetings that still have no content in one message: *"No notes found for: [list]. Paste notes or a transcript for any you want digested, or say skip."*
 
@@ -96,7 +95,7 @@ Explicit commitments that changed direction, locked something in, or closed an o
 Concrete next steps with a named owner. Apply this logic per item:
 - If the note names a specific person as the driver with high confidence → assign to them
 - If ownership is ambiguous or shared → assign to the user
-- Only include a Linear issue or project if it was **explicitly mentioned** in the meeting (by key, name, or clear reference). Do not infer or guess — if none was mentioned, leave the Project column blank (`—`)
+- Only include a project-management item or project if it was **explicitly mentioned** in the meeting (by key, name, or clear reference). Do not infer or guess — if none was mentioned, leave the Project column blank (`—`)
 - Note the suggested due date if mentioned in the meeting, otherwise leave blank
 
 **D. Open questions / blockers**
@@ -106,7 +105,7 @@ Unresolved questions, blockers raised, or topics parked for a future meeting. Th
 
 ### Step 4 — Project references
 
-Only record a Linear issue key or project name when it was **explicitly mentioned** in the meeting — by key (e.g. ENG-123), by name (e.g. "the onboarding revamp milestone"), or by unambiguous reference.
+Only record an item key or project name when it was **explicitly mentioned** in the meeting — by key (e.g. ENG-123), by name (e.g. "the onboarding revamp milestone"), or by unambiguous reference.
 
 Do not infer, look up, or guess projects from meeting context. It is better to leave it blank than to assign a wrong one.
 
@@ -149,7 +148,7 @@ If raw notes were the source (Phase B step 4), keep them under a `## Raw notes` 
 
 **Before saving**, add `[[wiki-links]]` to the note for Obsidian graph connectivity:
 - All people mentioned by name → `[[Name]]`
-- All Linear issue keys → `[[KEY-123]]`
+- All item keys → `[[KEY-123]]`
 - Key concepts, projects and themes that recur across notes → `[[Concept]]`
 - Only link meaningful mentions — not every word, not inside code blocks or URLs
 
@@ -219,7 +218,7 @@ Ask once, in a single message:
 >     1. [Decision]
 >     2. [Decision]
 >
-> If yes, tell me which doc (a local file in `Context/Document Hub/` or a Notion page URL) and which decision numbers to add."
+> If yes, tell me which doc (a local file in `Context/Document Hub/` or a page in the docs tool) and which decision numbers to add."
 
 Number decisions sequentially across all meetings so the user can reference them by number.
 
@@ -235,7 +234,7 @@ Wait for the user's response.
 **A. Fetch the doc**
 
 - Local file → read it.
-- Notion page → call `notion-fetch` with the page URL or ID.
+- Docs-tool page → `docs.read`.
 
 **B. Locate the Decision Log**
 
@@ -266,7 +265,7 @@ If the table doesn't exist yet, create it with this header row first:
 
 **D. Preview, then update**
 
-Show the rows to be added. For a local file, write them. For a Notion page, wait for the user's explicit OK, then call `notion-update-page` — change only the Decision Log section.
+Show the rows to be added. For a local file, write them. For a docs-tool page, wait for the user's explicit OK, then `docs.update(ref, "Decision Log", rows)` — change only that section.
 
 **E. Confirm**
 
@@ -279,8 +278,8 @@ Show the rows to be added. For a local file, write them. For a Notion page, wait
 - **No decisions found**: Write "No decisions made — discussion/update meeting." Do not invent decisions.
 - **No action items found**: Write "No action items."
 - **Meeting is a standup or <5 min**: Still run the digest, but keep the summary to 1 sentence.
-- **Multiple Notion notes match the same event**: Use the one closest to the event's start time.
-- **Notion unavailable**: Skip that source silently and fall through to the next one in Phase C.
-- **Notion page not found (Step 8)**: Report the error, ask the user to double-check the URL, and offer to retry.
+- **Multiple notes match the same event**: Use the one closest to the event's start time.
+- **A source is unavailable**: Skip it silently and fall through to the next one in Phase C.
+- **Docs page not found (Step 8)**: Report the error, ask the user to double-check the URL, and offer to retry.
 - **Decision Log section ambiguous (Step 8)**: If multiple headings could match (e.g. "Key Decisions" and "Decision Log"), show both and ask which one to append to.
 - **Duplicate decisions (Step 8)**: Before inserting, scan existing rows. If the same decision text already appears, skip it and note the skip.

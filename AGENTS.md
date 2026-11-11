@@ -29,7 +29,8 @@ project/
 ├── BACKLOG.md              # Raw capture inbox
 ├── Weekly Kanban.md        # Sprint board — Obsidian kanban with [[wiki-links]] to task files
 └── .claude/
-    ├── skills/             # Custom slash commands
+    ├── skills/             # Custom slash commands (tool-agnostic)
+    ├── adapters/           # One file per tool: how each role operation maps to its MCP calls
     └── templates/          # Reusable doc templates (goal template, etc.)
 ```
 
@@ -57,6 +58,7 @@ project/
 | `Notes/` | Daily notes and thinking | Check for recent context when planning the day |
 | `Weekly Kanban.md` | Sprint board — lightweight Obsidian kanban with `[[wiki-links]]` to task files | Visual sprint view; synced by `/backlog` and `/weekly-wrap` |
 | `.claude/skills/` | Slash command definitions | Automatically loaded by Claude Code |
+| `.claude/adapters/` | Tool adapters — role operations mapped to each tool's MCP calls | Whenever a skill calls a role operation |
 
 ## Backlog Flow
 
@@ -219,8 +221,8 @@ Custom commands live in `.claude/skills/<name>/SKILL.md`. These are invoked via 
 | `/draft-prd [initiative]` | `.claude/skills/draft-prd/SKILL.md` | PRD (Opportunity Space + Solution Space) |
 | `/draft-reqs [initiative] [milestone]` | `.claude/skills/draft-reqs/SKILL.md` | Requirements doc for one milestone |
 | `/draft-experiment-doc [name]` | `.claude/skills/draft-experiment-doc/SKILL.md` | Experiment doc (Background, UX, Development, Post experiment) |
-| `/draft-idea [topic]` | `.claude/skills/draft-idea/SKILL.md` | Opportunity statement, optionally created as a Linear issue |
-| `/draft-goal-update [project]` | `.claude/skills/draft-goal-update/SKILL.md` | Progress update for a goal tracked as a Linear project |
+| `/draft-idea [topic]` | `.claude/skills/draft-idea/SKILL.md` | Opportunity statement, optionally created as an item in your project tool |
+| `/draft-goal-update [project]` | `.claude/skills/draft-goal-update/SKILL.md` | Progress update for a goal tracked as a project in your project tool |
 | **Thinking & review** | | |
 | `/steelman-advice [doc]` | `.claude/skills/steelman-advice/SKILL.md` | Multi-perspective steelman of a document — blind spots and improvements |
 | `/bias [topic]` | `.claude/skills/bias/SKILL.md` | Bias audit against your motivational profile |
@@ -282,27 +284,24 @@ Examples:
 - "Remember that I prefer..." — saves to Context/Memory
 - "What have I learned about..." — searches Context/Memory/learnings.md
 
-## MCP Tool Routing
+## Tools: roles, config and adapters
 
-The active tool stack is set in `Context/agent-config.md` → **Tool Stack**. Skills are written against this stack:
+Skills never name a tool. They call **role operations** — `pm.my_items(started)`, `email.inbox(since)`, `calendar.events(from, to)`, `docs.search(query)`, `files.read(id)`, `comms.mentions(since)`.
 
-| Role | MCP | What it's used for | Key tools |
-|---|---|---|---|
-| **Project management** | Linear | Issues, projects, milestones, cycles, comments, project status updates | `list_issues`, `get_issue`, `save_issue`, `list_comments`, `save_comment`, `list_projects`, `get_project`, `list_milestones`, `get_status_updates`, `save_status_update` |
-| **Email** | Gmail | Search and read threads, create drafts | `search_threads`, `get_thread`, `create_draft` |
-| **Calendar** | Google Calendar | List events, get event details | `list_events`, `get_event`, `list_calendars` |
-| **Docs** | Notion | Search, read, create and update pages | `notion-search`, `notion-fetch`, `notion-create-pages`, `notion-update-page` |
-| **Files** | Google Drive | Read Gemini meeting notes and shared docs (read-only) | `search_files`, `read_file_content` |
-| **Comms** | — | None configured. Skills skip comms steps | — |
+To run one:
+1. Read `Context/agent-config.md` → **Tool Stack**. Each role names a tool and an adapter file.
+2. Follow that adapter's recipe in `.claude/adapters/<tool>.md`. Tool quirks (query syntax, noise filters, missing filters) live in the adapter, not in skills.
+3. Role is `none`, or the adapter has no recipe for that operation → skip the step and keep going.
+4. A call fails (auth error, tool not found) → tell the user which tool is disconnected and point to `/onboard`.
 
-**Rules:**
-- **Linear queries:** use `assignee: "me"` for the user's own work. Use `updatedAt` with an ISO-8601 duration (e.g. `-P7D`) for "changed recently". Statuses differ per team — call `list_issue_statuses` when unsure.
-- **Gmail:** create drafts only. Never call a send tool unless the user says "send it". Filter inbox searches with `-category:promotions -category:updates -category:social -category:forums` — promotions and updates are noise. Don't use `category:primary`: it can return nothing when mail is labelled `CATEGORY_PERSONAL`. Skip calendar notifications (`Invitation:`, `Updated invitation`, `Appointment cancelled`) — the calendar already holds them.
-- **Linear due dates:** `list_issues` cannot filter by due date. Fetch open issues (`state: "started"`, `"unstarted"`, `"backlog"`) with the `dueDate` field and filter locally.
-- **Notion:** draft locally first. Read Notion freely for context, but never create or edit a Notion page until the user explicitly approves.
-- **Linear writes** (new issues, comments, status updates) need the user's confirmation in chat first.
+The operation catalogue is in `.claude/adapters/README.md`. Switching tools = edit one row in agent-config. To support a new tool, copy `.claude/adapters/_template.md`.
 
-If a tool call returns an auth error or "tool not found", tell the user which MCP is missing and direct them to connect it (see `/onboard` Step 0 for setup instructions).
+**Write rules (every tool):**
+- ✋ operations (`pm.create_item`, `pm.comment`, `pm.post_update`, `email.draft`, `docs.create`, `docs.update`) show the exact content in chat and wait for an explicit yes.
+- Never send email or post messages. Drafts only, unless the user says "send it".
+- Draft documents locally first. Publish to the docs tool only when asked.
+
+When editing a skill, never write a tool name, MCP tool name or tool-specific query into it. Add it to the adapter instead.
 
 ## Git Workflow
 
@@ -310,6 +309,7 @@ If a tool call returns an auth error or "tool not found", tell the user which MC
 
 ### What gets pushed to GitHub ✅
 - `.claude/skills/` — skill definitions and slash commands
+- `.claude/adapters/` — tool adapters
 - `.claude/templates/` — generic doc templates
 - `AGENTS.md`, `CLAUDE.md` — assistant instructions
 - `README.md`, `LICENSE`, `.gitignore`, `.gitattributes`, `Tasks/README.md`

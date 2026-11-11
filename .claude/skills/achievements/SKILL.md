@@ -1,9 +1,11 @@
 ---
 name: achievements
-description: "Weekly achievements log for performance review prep. Pulls official goal progress from Linear (projects, milestones and issues assigned to the user), surfaces extra work from meeting notes, email and docs, maps everything to the user's goals, flags growth behaviours, and appends a dated entry to a running achievements log. Use whenever someone says: /achievements, 'log my achievements', 'what did I deliver this week', 'update my review log', 'capture my wins', 'log my extra work', 'track what I shipped', 'review prep', or anything about recording weekly progress for review season."
+description: "Weekly achievements log for performance review prep. Pulls official goal progress from the project-management tool (projects, milestones and items assigned to the user), surfaces extra work from meeting notes, email and docs, maps everything to the user's goals, flags growth behaviours, and appends a dated entry to a running achievements log. Use whenever someone says: /achievements, 'log my achievements', 'what did I deliver this week', 'update my review log', 'capture my wins', 'log my extra work', 'track what I shipped', 'review prep', or anything about recording weekly progress for review season."
 ---
 
 # /achievements — Weekly Achievements Log
+
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
 
 Build a weekly achievements entry that maps the user's work to their goals, flags growth behaviours, captures extra work beyond their official remit, and appends everything to a running log. The goal: self-review becomes a copy-paste exercise, not a memory test.
 
@@ -23,18 +25,18 @@ If there is no review-cycle file, use `GOALS.md`. If it has no goal tags, derive
 
 ---
 
-## Step 1: Pull Official Goal Progress from Linear
+## Step 1: Pull Official Goal Progress
 
 Focus on what *moved* this week — status changes, comments, decisions — not just what exists.
 
 **Issues assigned to the user, updated this week:**
-`list_issues` with `assignee: "me"`, `updatedAt: -P7D`, ordered by `updatedAt`.
+`pm.my_items_updated(7)` and `pm.my_items_completed(7)`.
 
 **Projects the user leads, updated this week:**
-`list_projects` with `member: "me"` (or lead), then `get_status_updates` for any updated in the last 7 days.
+`pm.projects(mine)`, then `pm.project_updates` for any updated in the last 7 days.
 
 **Milestones on those projects:**
-`list_milestones` — note any that changed status this week.
+`pm.milestones(project)` — note any that changed status this week.
 
 For each result, extract: identifier, title, current status, project, and milestone. Use the project to determine which goal the work sits under — refer to the routing rules in the goals file. An issue moving to Done = achievement. An issue moving to In Progress = momentum.
 
@@ -42,10 +44,11 @@ For each result, extract: identifier, title, current status, project, and milest
 
 ## Step 2: Pull Extra Work Signals
 
-Look for substantive work in the last 7 days that isn't tracked in Linear:
+Look for substantive work in the last 7 days that isn't tracked in project management:
 - **Meeting notes** — `Context/Meeting Notes/` files from the last 7 days: decisions the user drove, initiatives kicked off
-- **Email** — Gmail `search_threads` with `from:me newer_than:7d`: decisions, coordination, things said no to
-- **Docs** — Notion `notion-search` for pages the user created or edited this week, and `Context/Document Hub/` files modified this week
+- **Email** — `email.sent(7 days ago)`: decisions, coordination, things said no to
+- **Docs** — `docs.recent_mine(7)`, and `Context/Document Hub/` files modified this week
+- **Comms** — `comms.search(from the user, 7 days ago)`, if configured
 
 Look for:
 - Decisions made or driven
@@ -90,7 +93,7 @@ Use the goal tags and growth behaviour flags defined in the goals file.
 
 After presenting the synthesised entries, ask:
 
-> "Anything I missed? Think about: decisions made that aren't in Linear, capability work done for the team, things explicitly said no to (visible prioritisation), extra coordination that isn't tracked anywhere, or new initiatives being seeded."
+> "Anything I missed? Think about: decisions made that aren't in your project tool, capability work done for the team, things explicitly said no to (visible prioritisation), extra coordination that isn't tracked anywhere, or new initiatives being seeded."
 
 Wait for the user's response. Add anything they name with `#extra` and the appropriate goal tag(s). If they describe something that will likely become a formal goal, note it with a `→ future goal candidate` flag.
 

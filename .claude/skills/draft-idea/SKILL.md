@@ -1,9 +1,11 @@
 ---
 name: draft-idea
-description: "Draft an opportunity statement (problem context, impact, desired outcome) and optionally create it as an issue in Linear."
+description: "Draft an opportunity statement (problem context, impact, desired outcome) and optionally create it as an item in the project-management tool."
 ---
 
 # Draft Idea
+
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
 
 Draft an opportunity statement in the standard product discovery format: problem context, impact, desired outcome. Only use context the user provides — never invent or assume details.
 
@@ -54,11 +56,13 @@ Wait for confirmation or edits. Apply changes before continuing.
 
 ---
 
-## Step 3 — Ask about Linear
+## Step 3 — Ask about the project tool
 
 After the user confirms the draft, ask:
 
-> "Do you want to create this as an issue in Linear?"
+> "Do you want to create this as an item in [pm tool from agent-config]?"
+
+If the `pm` role is `none`, skip Steps 3–7 and offer to save the draft locally instead.
 
 If **no** → done. The draft lives in chat only.
 
@@ -66,11 +70,11 @@ If **yes** → continue to Step 4.
 
 ---
 
-## Step 4 — Gather Linear metadata
+## Step 4 — Gather item metadata
 
 Ask the user in a single message:
 
-> "A few details to create it in Linear:
+> "A few details to create it:
 > 1. **Team** — which team should own it?
 > 2. **Project** *(optional)* — should it sit under an existing project?
 > 3. **Labels** *(optional)* — e.g. `Idea`, a theme or area
@@ -83,15 +87,12 @@ While waiting, run Step 5 in parallel to prepare suggestions.
 ## Step 5 — Look up options
 
 Surface real values so the user doesn't have to remember exact names:
-- `list_teams` — available teams
-- `list_projects` — active projects for the chosen team
-- `list_issue_labels` — labels for the chosen team
-- `list_issue_statuses` — statuses for the chosen team
+- `pm.options(team)` — teams, projects, labels and statuses
 
 Present them as suggestions alongside the user's answers:
 
 ```
-Options in Linear:
+Options in [pm tool]:
 
 **Teams:** [list]
 **Projects:** [list]
@@ -103,11 +104,11 @@ If a lookup fails, note it and proceed with whatever the user provides directly.
 
 ---
 
-## Step 6 — Create the issue
+## Step 6 — Create the item
 
-First, check for duplicates: call `list_issues` with `query: "[idea title keywords]"` for the chosen team. If a matching issue exists, show it and ask whether to update it instead.
+First, check for duplicates with `pm.search(idea title keywords)`. If a matching item exists, show it and ask whether to update it instead.
 
-Once the user confirms the metadata, create the issue with `save_issue`:
+Once the user confirms the metadata, `pm.create_item` with:
 
 - **Team**: user-confirmed team
 - **Title**: the idea title from Step 1
@@ -121,7 +122,7 @@ Once the user confirms the metadata, create the issue with `save_issue`:
 After creation, show:
 
 ```
-✅ Idea created in Linear: [Title] ([KEY-123](link))
+✅ Idea created: [Title] ([KEY-123](link))
 
 Fields set:
 - Team: [team]
@@ -138,6 +139,6 @@ If any field couldn't be set, note it:
 ## Edge cases
 
 - **Not enough context for a required field**: ask the user rather than drafting a placeholder. One gap = one short follow-up question.
-- **Linear auth error**: tell the user which MCP is failing and direct them to reconnect it.
+- **Auth error**: tell the user which tool is failing and direct them to reconnect it.
 - **Team or project not found in Step 5**: ask the user to confirm the name, then retry once.
 - **User wants to save the draft locally**: save to `Context/Document Hub/[Title] — Idea.md` only if the user asks. Do not save automatically.

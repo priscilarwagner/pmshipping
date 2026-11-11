@@ -5,6 +5,8 @@ description: "Prepare for a 1:1 — pull context from goals, meeting notes, emai
 
 # 1:1 Prep
 
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
+
 Prepare focused talking points for a 1:1 meeting with a specific person.
 
 ## Instructions
@@ -20,8 +22,8 @@ If no person name is provided, ask: "Who's the 1:1 with?"
 3. Search `Context/Document Hub/` for shared docs, PRDs, or projects involving them
 4. Check `GOALS.md` — identify which goals this person is connected to (e.g., key relationships, team members, stakeholders)
 5. Check `Context/Memory/` for any stored preferences or notes about working with this person
-6. Check Google Calendar for the next event with this person as an attendee (`list_events` with `fullText: [name]`, next 14 days) — note the date and any agenda in the description
-7. If Gmail is connected, search for recent threads with them (`search_threads` with `from:[person] OR to:[person] newer_than:30d`)
+6. `calendar.next_with(person, 14)` — note the date and any agenda in the description
+7. `email.with(person, 30)` — recent threads with them
 
 ### Step 2: Review Your Recent Work
 
@@ -99,7 +101,7 @@ Present the talking points and ask: "Anything to add or adjust?"
 ## Output Format
 
 - One screen max. Short bullets. No headers beyond the four section names.
-- Use `*` bullet style (not `-`) for copy-paste compatibility with Google Docs / Notion.
+- Use `*` bullet style (not `-`) for copy-paste compatibility with most doc tools.
 - Sub-bullets with 4-space indent for supporting context under a topic.
 - No bold section headers — just the section name followed by a blank line and bullets.
 - The user will cherry-pick bullets, so each one should make sense standalone.

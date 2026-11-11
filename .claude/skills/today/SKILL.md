@@ -5,6 +5,8 @@ description: "Build a focused plan for today based on goals, tasks, and recent a
 
 # Today
 
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
+
 Build a focused daily plan by starting from what actually happened — messages, calendar, meeting outcomes — then reconciling with the weekly plan, and anchoring to goals at the end. The output is a daily briefing the user can confirm or adjust.
 
 ## Instructions
@@ -21,28 +23,25 @@ Start from the most granular, real-time signals and work upward.
 
 Pull signals from yesterday. Use the current date to compute "yesterday" for all queries.
 
-**Google Calendar** (via Google Calendar MCP, if available):
+**Calendar** — `calendar.events` for today and yesterday:
 - Pull today's events: titles, attendees, times, descriptions
 - Pull yesterday's events to cross-reference against action items
 - Extract: meetings that need prep, time blocks available for deep work, back-to-back stretches to flag
-- If Google Calendar MCP is not available, ask: *"Paste today's calendar so I can factor in meetings."*
+- If the calendar role is `none` or unavailable, ask: *"Paste today's calendar so I can factor in meetings."*
 
-**Email** (Gmail, if available):
-- `search_threads` for threads since yesterday morning: `in:inbox newer_than:1d -from:me -category:promotions -category:updates -category:social -category:forums` (`view: THREAD_VIEW_SUMMARY`)
+**Email** — `email.inbox(yesterday)`:
 - Extract: decisions made, questions awaiting response, FYIs that shift priorities. Skip newsletters and automated mail
-- If not available, note: *"Gmail not connected — paste any important highlights so I can factor them in."*
+- If unavailable, note: *"Email not connected — paste any important highlights so I can factor them in."*
 
 **Meeting notes**:
 - Check `Context/Meeting Notes/` for notes from yesterday's meetings
-- For yesterday's calendar events with a "Notes by Gemini" attachment, read it with Google Drive `read_file_content` (skip silently if not found — notes owned by other organisers are often not shared)
-- If still nothing and Notion is connected, call `notion-query-meeting-notes` for yesterday
+- If none exist, try the other **Meeting notes sources** in agent-config, in order (e.g. calendar attachments via `files.read`, then `docs.meeting_notes(yesterday)`)
 - Extract: action items, decisions, follow-ups
 
-**Linear** (if available):
-- `list_issues` with `assignee: "me"` and `state: "started"` (In Progress + In Review), ordered by `updatedAt`
+**Project management** — `pm.my_items(started)`:
 - For each in-progress issue: note the title, key, priority, and any recent comments
 - Flag any issues that are overdue (due date passed) or blocked
-- If Linear is not available, skip silently
+- If the pm role is `none`, skip silently
 
 Compile a **"Since Yesterday"** digest from all sources: new decisions, open action items, threads needing response, and anything that shifts priorities.
 
@@ -98,7 +97,7 @@ Add the talking points to the daily briefing under the meeting entry, and write 
 #### For each normal meeting
 
 1. Search `Context/Meeting Notes/` for recent notes from the same recurring meeting or topic
-2. Check tasks, email and Linear for anything relevant to the meeting's agenda or attendees
+2. Check tasks, email and project-management items for anything relevant to the meeting's agenda or attendees
 3. Write **1 bullet**: a tangible action the user can take or a specific perspective they can bring. Frame as: `[Meeting name]: [action or perspective]`
 
 Add the bullet to the daily briefing and write it into the weekly scratchpad under `### Meeting Prep`.
@@ -156,7 +155,7 @@ For each meeting, include prep:
 2. **[Item]** — [why now, goal ref]
 3. **[Item]** — [why now, goal ref]
 
-### Linear — In Progress
+### In Progress (project management)
 | Issue | Priority | Notes |
 |-------|----------|-------|
 | [Title] ([KEY-123](link)) | [Urgent/High] | [overdue / blocked / updated recently] |

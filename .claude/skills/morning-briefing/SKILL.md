@@ -1,14 +1,16 @@
 ---
 name: morning-briefing
-description: "Daily brief — pulls calendar, Linear and overnight email signals, picks 3 focus items, and saves a compact briefing to Notes/Briefings/. Can run unattended on a weekday schedule."
+description: "Daily brief — pulls calendar, project-management and overnight email signals, picks 3 focus items, and saves a compact briefing to Notes/Briefings/. Can run unattended on a weekday schedule."
 ---
 
 ## Configuration
 
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
+
 Read `Context/agent-config.md` at the start. Use:
 - `timezone` — for date calculations throughout
 - `base_directory` — for resolving skill and output file paths
-- **Tool Stack** — which tools to pull from (Linear, Gmail, Google Calendar; no comms tool)
+- **Tool Stack** — which tool and adapter serve each role
 
 # Morning Briefing
 
@@ -28,24 +30,21 @@ Run all steps in sequence. If a tool is unavailable or returns an error, skip th
 
 Compute today's date and yesterday's date using the timezone from `Context/agent-config.md`.
 
-**Calendar** — call Google Calendar `list_events` for today (midnight → 11:59pm local time):
+**Calendar** — `calendar.events(today 00:00, today 23:59)`:
 - Extract: meeting title, time, duration, attendees
 - Flag: 1:1s (2 attendees or title contains "1:1", "121", "catch up", person name only)
 - Flag: back-to-back stretches (< 15 min between meetings)
 - Flag: any deep work blocks or focus time events
 
-**Linear** — `list_issues` has no due-date filter, so fetch and filter locally:
-1. `list_issues` with `assignee: "me"`, `state: "started"` (In Progress + In Review), `fields: [id, title, status, priority, dueDate, project, url, updatedAt]`
-2. `list_issues` with `assignee: "me"`, `state: "unstarted"` and again with `state: "backlog"`, same fields — keep only issues with a `dueDate`
-3. From all results: **overdue** = `dueDate` before today; **due today** = `dueDate` = today
+**Project management** — run in parallel:
+1. `pm.my_items(started)` — in progress
+2. `pm.due(any past date, yesterday)` — overdue
+3. `pm.due(today, today)` — due today
 
 Deduplicate by issue identifier. Max 8 issues total.
 
-**Email** — call Gmail `search_threads` for overnight mail (since 6pm yesterday):
-```
-in:inbox after:[YYYY/MM/DD yesterday] -from:me -category:promotions -category:updates -category:social -category:forums
-```
-Use `view: THREAD_VIEW_SUMMARY`. Extract: questions directed at the user, decisions or deadlines (interviews, recruiters, offers, contracts), anything blocking someone. Ignore newsletters, receipts and automated notifications (`no-reply`, `noreply`, `notifications@`) unless they carry a deadline.
+**Email** — `email.inbox(since yesterday)`, keeping mail from 6pm yesterday onwards.
+Extract: questions directed at the user, decisions or deadlines (interviews, recruiters, offers, contracts), anything blocking someone. Ignore newsletters, receipts and automated notifications (`no-reply`, `noreply`, `notifications@`) unless they carry a deadline.
 
 **Draft request detection** — while scanning email, flag any thread that asks the user for something matching these patterns:
 
@@ -85,10 +84,10 @@ If `DRAFT_TRIGGERS` is empty, skip this step entirely.
 ### Step 2 — Pick 3 focus items
 
 Select exactly 3 focus items for today. Priority order:
-1. Overdue Linear issues (due date passed, not done)
+1. Overdue items (due date passed, not done)
 2. P0 tasks from `Tasks/`
-3. Linear issues due today
-4. In-progress Linear issues most recently updated
+3. Items due today
+4. In-progress items most recently updated
 5. Active tasks (`status: s`) by priority field
 
 State each item as: what it is, why it's the priority today (due date, overdue, or goal ref).
@@ -112,10 +111,10 @@ _[Flag if back-to-back stretches exist, e.g. "⚡ Heads up: 10am–1pm is back-t
 2. **[Item]** — [why]
 3. **[Item]** — [why]
 
-**🔴 Linear — Overdue**
+**🔴 Overdue**
 - [Issue title] ([KEY-123](issue-url)) _(due [date])_
 
-**🟡 Linear — Due Today**
+**🟡 Due Today**
 - [Issue title] ([KEY-456](issue-url))
 
 **✉️ Overnight Email**
@@ -126,10 +125,10 @@ _[Flag if back-to-back stretches exist, e.g. "⚡ Heads up: 10am–1pm is back-t
 ```
 
 Rules:
-- Name issues by title first, then link the key, using the `url` returned by Linear
+- Name items by title first, then link the key (`pm.link`)
 - Omit the *Overnight Email* section if nothing actionable was found
 - Omit the *Heads Up* section if nothing to flag
-- Omit *Linear — Overdue* or *Linear — Due Today* sections individually if empty
+- Omit *Overdue* or *Due Today* sections individually if empty
 - If calendar is empty, write: `- No meetings today 🎉`
 - Do not add "have a great day" or any motivational language
 
@@ -147,6 +146,6 @@ When running unattended, output nothing else except a single confirmation line f
 
 - **Weekend run**: If today is Saturday or Sunday, write a single line: `🗓️ No brief today — it's [Saturday/Sunday].` and exit.
 - **Public holiday / OOO**: If the calendar shows an all-day OOO or public holiday event, note it at the top of the brief: `_📴 OOO today — brief is for reference only._`
-- **All tools fail**: Write: `## ☀️ Morning Brief — [date]` and `⚠️ Could not reach tools (Calendar, Linear, Gmail). Check connections.`
-- **No Linear items**: Omit both Linear sections entirely.
+- **All tools fail**: Write: `## ☀️ Morning Brief — [date]` and `⚠️ Could not reach the calendar, project-management or email tools. Check connections.`
+- **No items**: Omit both item sections entirely.
 - **No overnight email signals**: Omit the Overnight Email section.

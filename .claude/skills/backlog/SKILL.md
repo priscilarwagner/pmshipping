@@ -5,6 +5,8 @@ description: "Triage the BACKLOG.md inbox — extract items, enrich with context
 
 # Process Backlog
 
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
+
 Triage the raw capture inbox (`BACKLOG.md`) into structured, goal-aligned task files.
 
 ## Instructions
@@ -30,7 +32,7 @@ When the user invokes `/backlog` (or says "clear my backlog", "process backlog",
 
 ### Step 4: Deduplicate
 
-1. Read existing task files in `Tasks/` and `Tasks/Backlog/` (check titles and content). Also check Linear (`list_issues` with `query`) for the same work
+1. Read existing task files in `Tasks/` and `Tasks/Backlog/` (check titles and content). Also check `pm.search` for the same work
 2. Flag any backlog item that duplicates or overlaps with an existing task
 3. For duplicates, suggest updating the existing task instead of creating a new one
 

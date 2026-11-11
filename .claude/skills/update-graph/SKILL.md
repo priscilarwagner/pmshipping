@@ -1,11 +1,13 @@
 ---
 name: update-graph
-description: "Build or refresh the user's interactive idea graph — connects their ideas from meeting notes to other people's ideas in Notion and email, and to active Linear projects. Saves a self-contained HTML file. Run weekly or on demand."
+description: "Build or refresh the user's interactive idea graph — connects their ideas from meeting notes to other people's ideas in docs, email and comms, and to active projects. Saves a self-contained HTML file. Run weekly or on demand."
 ---
 
 # Update Idea Graph
 
-Regenerate `Context/Document Hub/idea-graph.html` — a fully self-contained interactive graph connecting the user's ideas, other people's related ideas in Notion and email, and active Linear projects and issues.
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
+
+Regenerate `Context/Document Hub/idea-graph.html` — a fully self-contained interactive graph connecting the user's ideas, other people's related ideas in docs, email and comms, and active projects and items.
 
 **Design principle:** Only draw edges when the connection is OBVIOUS and SPECIFIC. A shared vague theme (both mention "AI") is NOT an edge. A shared specific concept ("bottom-sheet", "guest checkout", "ENG-123") IS an edge. When in doubt, leave the edge out. A sparse, accurate graph is better than a dense, noisy one.
 
@@ -53,8 +55,8 @@ For each idea node:
 }
 ```
 
-**Source B: Active Linear projects and issues (ORANGE)**
-Call `list_projects` for projects the user leads or is a member of that aren't completed or cancelled, and `list_issues` with `assignee: "me"` for issues not completed or cancelled, ordered by `updatedAt`.
+**Source B: Active projects and items (ORANGE)**
+`pm.projects(mine)` (not completed or cancelled) and `pm.my_items(open)`.
 
 For each project or issue, create:
 ```json
@@ -64,7 +66,7 @@ For each project or issue, create:
   "label": "Short title",
   "content": "Project or issue summary",
   "date": "last updated date",
-  "url": "Linear URL",
+  "url": "item link (pm.link)",
   "keywords": ["extracted from title and description"]
 }
 ```
@@ -88,13 +90,14 @@ Identify 3–5 recurring themes that span multiple of the user's ideas. These ar
 ### Step 3 — Find other people's ideas (BLUE)
 
 For your top 10–15 most specific keywords, search:
-- **Notion** — `notion-search` with the keyword. Keep pages authored or last edited by someone other than the user
-- **Email** — Gmail `search_threads` with the keyword and `newer_than:30d -from:me`
+- **Docs** — `docs.search(keyword)`. Keep pages authored or last edited by someone other than the user
+- **Email** — `email.search(keyword, 30 days ago)`, excluding threads only the user wrote
+- **Comms** — `comms.search(keyword, 30 days ago)`, if configured
 
 Skip generic words.
 
 For each result:
-- Read the content (`notion-fetch` / `get_thread`)
+- Read the content (`docs.read` / `email.thread` / `comms.thread`)
 - Check: does this discuss the SAME SPECIFIC concept as one of the user's ideas, or is it just coincidentally using a similar word?
 - **Include only if:** the connection is unambiguous — clearly about the same feature, initiative, or decision the user is working on
 - **Exclude if:** the match is loose, generic, or would require interpretation to connect
@@ -105,7 +108,7 @@ For included results, create a **person node** (GREY) for the author if not alre
   "id": "person-[name-slug]",
   "type": "person",
   "label": "[Display Name]",
-  "content": "[Name] — [Notion / email] contributor",
+  "content": "[Name] — [docs / email / comms] contributor",
   "date": null,
   "keywords": []
 }
@@ -119,9 +122,9 @@ And an **others' idea node** (BLUE):
   "label": "Short label of the idea",
   "content": "Quoted or paraphrased content (1–2 sentences)",
   "author": "[Display Name]",
-  "channel": "Notion page title or email subject",
+  "channel": "page title, email subject or channel",
   "date": "YYYY-MM-DD",
-  "url": "Notion page URL if available",
+  "url": "source link if available",
   "keywords": ["specific", "terms"]
 }
 ```
@@ -133,11 +136,11 @@ And an **others' idea node** (BLUE):
 Go through all nodes and identify edges. Only create an edge when the connection is **OBVIOUS AND SPECIFIC**:
 
 **Valid reasons for an edge:**
-- Both nodes reference the same Linear issue key or project
+- Both nodes reference the same item key or project
 - Both nodes use the same specific feature name (e.g., "bottom-sheet", "guest checkout")
 - Both nodes mention the same person in a decision-making context
 - A doc or email is directly discussing a topic from a meeting note
-- A Linear project is the direct home of an idea from a meeting
+- A project is the direct home of an idea from a meeting
 
 **Invalid reasons (do NOT create edge):**
 - Both mention "AI" (too generic)
@@ -538,5 +541,5 @@ After writing the file, say:
 - **No results for a keyword**: skip silently, don't create an empty node
 - **Doc or email too vague to connect**: exclude it — when in doubt, leave it out
 - **Duplicate ideas** (same concept in two meeting notes): merge into one node, cite both sources in `content`
-- **Linear returns >20 results**: limit to the 20 most recently updated issues and projects
+- **More than 20 projects/items**: limit to the 20 most recently updated
 - **No connections found for a node**: still include the node — an isolated idea is valid, it just has no edges yet

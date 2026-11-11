@@ -5,6 +5,8 @@ description: "Draft a Requirements Doc for a single milestone — the detailed '
 
 # Draft Requirements Doc
 
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
+
 Draft a Requirements Doc for a single milestone following the team template. This is the "what we're building" doc — the level of detail that lets designers design and builders build. One Requirements Doc per milestone.
 
 **Output:** Saved to `Context/Document Hub/[Initiative Name] — [Milestone Name] Requirements Doc.md` + shown in chat for review.
@@ -28,12 +30,12 @@ Look for a Strategy One Pager and/or opportunity statement to inform the doc:
 **A. Context/Document Hub/**
 Scan for `[Initiative Name] Strategy One Pager.md` or any existing PRD/strategy doc for this initiative.
 
-**B. Linear**
-`list_projects` and `list_issues` with `query: "[initiative keywords]"` (limit 10). If a project matches, call `get_project` and `list_milestones`.
-Extract: project description, milestone-level issues, assignees.
+**B. Project management**
+`pm.projects(keywords)` and `pm.search(keywords)`. If a project matches, `pm.project` and `pm.milestones`.
+Extract: project description, milestone-level items, assignees.
 
-**C. Notion**
-`notion-search` for the Strategy One Pager or related docs; read matches with `notion-fetch`.
+**C. Docs**
+`docs.search` for the Strategy One Pager or related docs; read matches with `docs.read`.
 
 If neither a Strategy One Pager nor an opportunity statement is found, note it clearly:
 
@@ -66,7 +68,7 @@ Ask the user to provide or confirm:
 > - **Tech design** — doc link or key architectural decisions, if available
 > - **Open questions** — anything unresolved
 
-For anything not provided, I'll mark `[To complete]` or pull from the Strategy One Pager / Linear context."
+For anything not provided, I'll mark `[To complete]` or pull from the Strategy One Pager / project context."
 
 ---
 
@@ -74,7 +76,7 @@ For anything not provided, I'll mark `[To complete]` or pull from the Strategy O
 
 Follow the template structure. Apply these rules:
 - **User-provided content** → fill in directly
-- **Inferred from Strategy One Pager/Linear/meeting notes** → fill in with note *(from Strategy One Pager)*, *(from Linear)* or *(from meeting notes)*
+- **Inferred from Strategy One Pager/project tool/meeting notes** → fill in with note *(from Strategy One Pager)*, *(from project tool)* or *(from meeting notes)*
 - **Missing but required** → `[To complete]`
 - **Acceptance criteria column** → always `[To be written by engineering]` unless the user provided it
 - **AI features only**: include Eval cases section; reference eval case IDs (E1, G1, etc.) in the Requirements table

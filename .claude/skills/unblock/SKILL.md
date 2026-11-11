@@ -5,17 +5,19 @@ description: "Diagnose a stalled task and suggest the smallest next action to ge
 
 # Unblock
 
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
+
 Diagnose why a task has stalled and suggest the smallest possible next action to get it moving again.
 
 ## Instructions
 
 When the user invokes `/unblock [task name]`, run through all steps in sequence.
 
-If no task name is provided, scan `Tasks/` for the most obviously stalled item (in-progress with no recent progress log entry) and suggest it. Also check Linear: high/urgent issues assigned to the user still in Backlog or Todo, and started issues not updated for 7+ days (`list_issues`, `assignee: "me"`).
+If no task name is provided, scan `Tasks/` for the most obviously stalled item (in-progress with no recent progress log entry) and suggest it. Also check project management: high/urgent items from `pm.my_items(backlog)` and `pm.my_items(todo)`, and `pm.my_items(started)` not updated for 7+ days.
 
 ### Step 1: Read the Task
 
-1. Find and read the task file in `Tasks/` — or, if the user named a Linear issue (e.g. `ENG-123`), read it with `get_issue` and its comments with `list_comments`
+1. Find and read the task file in `Tasks/` — or, if the user named a project-management item (e.g. `ENG-123`), read it with `pm.item` and `pm.item_comments`
 2. Note: status, priority, created date, last progress log entry, sub-tasks (checked vs unchecked)
 3. Calculate how long it's been stalled (days since last progress log entry or creation if no log)
 
@@ -36,7 +38,7 @@ Check for common stall patterns:
 
 1. Search `Context/` for files related to the task topic
 2. Search `Context/Meeting Notes/` for recent discussions about this work
-3. If connected, search Gmail threads and Linear issues mentioning this topic
+3. Search `email.search`, `pm.search` and `comms.search` (where configured) for this topic
 4. Check `GOALS.md` — is this task still aligned to an active goal? If not, flag it.
 
 ### Step 4: Suggest the Unblock

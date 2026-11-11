@@ -16,15 +16,22 @@ Copy this file to `Context/agent-config.md` and fill it in — or run `/onboard`
 
 ## Tool Stack
 
-| Role               | Tool            | Value / notes                                              |
-| ------------------ | --------------- | ---------------------------------------------------------- |
-| Project management | Linear          | Workspace: [name]                                          |
-| Email              | Gmail           | Drafts only — never send without explicit approval         |
-| Calendar           | Google Calendar | Primary calendar                                           |
-| Docs               | Notion          | Draft locally first; never create or edit a Notion page without explicit approval |
-| Comms              | none            | No team messaging tool. Skills skip comms steps            |
-| Files              | Google Drive    | Read meeting notes (Gemini) and shared docs |
-| Meeting notes      | Gemini / pasted | Use pasted notes/transcripts or `Context/Meeting Notes/`   |
+Every skill reads this table to decide which tool to use. `/onboard` fills it in from your answers. Set a role to `none` and skills skip it. Adapters live in `.claude/adapters/` — copy `_template.md` for a tool that isn't there yet.
+
+| Role       | Tool                          | Adapter                          | Notes                  |
+| ---------- | ----------------------------- | -------------------------------- | ---------------------- |
+| `pm`       | [e.g. Linear, Jira, none]     | `.claude/adapters/[tool].md`     | [workspace, default team] |
+| `email`    | [e.g. Gmail, Outlook, none]   | `.claude/adapters/[tool].md`     |                        |
+| `calendar` | [e.g. Google Calendar, Outlook, none] | `.claude/adapters/[tool].md` |                     |
+| `docs`     | [e.g. Notion, Confluence, none] | `.claude/adapters/[tool].md`   |                        |
+| `files`    | [e.g. Google Drive, none]     | `.claude/adapters/[tool].md`     |                        |
+| `comms`    | [e.g. Slack, none]            | `.claude/adapters/[tool].md`     | [priority channels]    |
+
+**Meeting notes sources** (tried in order, first with content wins):
+1. [e.g. Calendar event attachments → `files.read`]
+2. [e.g. `docs.meeting_notes`]
+3. `Context/Meeting Notes/`
+4. Ask the user to paste notes
 
 ---
 

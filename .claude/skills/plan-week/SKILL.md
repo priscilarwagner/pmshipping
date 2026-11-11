@@ -5,6 +5,8 @@ description: "Draft the weekly plan — top 3 priorities, meeting triage, daily 
 
 # Week Plan
 
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
+
 Draft a forward-looking plan for the full week. This creates `Tasks/Week-YYYY-WNN.md` with all 5 days pre-populated so `/today` has a base to work from each morning. Run this on Monday (or Sunday evening).
 
 ## Instructions
@@ -20,20 +22,20 @@ Start from concrete state and signals, then layer in goals and learnings at the 
 1. Scan `Tasks/` root for all active tasks (`status: s` or `status: n`) — note priorities and any due dates. Skip `Week-*.md` scratchpads. Tasks that don't map to a current goal in `GOALS.md` are not candidates — list them under Risks as "orphaned tasks to archive"
 2. Scan `Tasks/Backlog/` and read files relevant to this week's priorities — for strategic context on active initiatives
 3. Read last week's wrap if available (`Context/Progress Updates/`) — what carried forward, what's still unresolved
-4. **Google Calendar** (via Google Calendar MCP, if available):
+4. **Calendar** — `calendar.events(Monday, Friday)`:
    - Pull all events for this week (Monday–Friday): titles, attendees, times, descriptions
    - This feeds the meeting triage step — every meeting should appear in the triage table
-   - If Google Calendar MCP is not available, ask: *"Paste your calendar for this week so I can triage meetings."*
-5. **Linear** (if available) — `list_issues` with `assignee: "me"` and `fields: [id, title, status, priority, dueDate, project, url]`, run for `state: "started"`, `state: "unstarted"` and `state: "backlog"`:
+   - If the calendar role is `none` or unavailable, ask: *"Paste your calendar for this week so I can triage meetings."*
+5. **Project management** — `pm.my_items(open)` and `pm.due(Monday, Sunday)`:
    - **In Progress:** the `started` results, by priority
    - **Backlog:** the `backlog` and `unstarted` results, by priority (top 10)
-   - **Due this week:** any result with a `dueDate` between Monday and Sunday — Linear has no due-date filter, so filter locally
+   - **Due this week:** the `pm.due` results
    - For each issue note: key, summary, priority, due date, any blockers in comments
    - Use these three lists as concrete inputs to Step 2's analysis — they are the ground truth for what's in flight vs what must land this week
-   - If Linear is not available, skip silently
-6. **Last week's meetings** — read `Context/Meeting Notes/` files from last Monday–Friday (and Notion meeting notes via `notion-query-meeting-notes`, if connected):
+   - If the pm role is `none`, skip silently
+6. **Last week's meetings** — read `Context/Meeting Notes/` files from last Monday–Friday, plus the other **Meeting notes sources** in agent-config:
    - Extract: unresolved action items, decisions that affect this week's priorities, open questions
-7. **Email** (Gmail, if available) — `search_threads` with `in:inbox newer_than:4d -from:me -category:promotions -category:updates -category:social -category:forums`: decisions, escalations, deadlines, interview or recruiter threads
+7. **Email** — `email.inbox(last Thursday)`: decisions, escalations, deadlines, interview or recruiter threads
 6. Read `Context/Memory/learnings.md` — scan recent entries for patterns that should inform this week's plan (e.g., recurring blockers, drift, process improvements)
 7. Check `Context/Memory/` for preferences that affect planning
 8. Read `GOALS.md` — quarterly objectives, top 3 priorities. Use as an alignment filter on the concrete context already gathered, not the starting frame
@@ -82,7 +84,7 @@ Present this to the user before writing the file:
 | Thu | [theme] | [deliverable] |
 | Fri | [theme] | [deliverable or wrap prep] |
 
-## Linear Snapshot
+## Project Snapshot
 **In Progress**
 | Key | Summary | Priority | Due |
 |-----|---------|----------|-----|

@@ -1,9 +1,11 @@
 ---
 name: draft-experiment-doc
-description: "Draft an experiment doc following a standard live experiment doc structure (Background, UX, Development, Post experiment). Confirms which sections are ready for input, pulls context from Linear, PRDs, meeting notes and Notion, then produces a structured doc with filled sections and clear [To complete] markers. Use this skill whenever someone mentions drafting, writing, or creating an experiment doc, experiment brief, or experiment page."
+description: "Draft an experiment doc following a standard live experiment doc structure (Background, UX, Development, Post experiment). Confirms which sections are ready for input, pulls context from the project-management tool, PRDs, meeting notes and the docs tool, then produces a structured doc with filled sections and clear [To complete] markers. Use this skill whenever someone mentions drafting, writing, or creating an experiment doc, experiment brief, or experiment page."
 ---
 
 ## Configuration
+
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
 
 Read `Context/agent-config.md` at the start. Use:
 - `default_driver` — for the Driver field in the doc header (override if specified)
@@ -12,7 +14,7 @@ Read `Context/agent-config.md` at the start. Use:
 
 Draft a structured experiment document following a live doc format. The document has four areas — **Background**, **UX**, **Development**, and **Post experiment** — with different readiness requirements for each. The goal is to create a working doc that's immediately useful: filled sections are complete enough to share, empty sections are clearly marked so nothing gets forgotten.
 
-**Output:** Saved to `Context/Document Hub/[Experiment Name] Experiment Doc.md` and shown in chat for review. Move it to Notion only if the user explicitly asks.
+**Output:** Saved to `Context/Document Hub/[Experiment Name] Experiment Doc.md` and shown in chat for review. Publish it to the docs tool (`docs.create`) only if the user explicitly asks.
 
 ---
 
@@ -29,7 +31,7 @@ Extract the experiment name from the request. If not provided, ask before contin
 Before gathering context, confirm which sections the user has information ready for. Present this checklist clearly:
 
 ```
-Which sections do you have info ready for? (I'll pull what I can from Linear, PRDs, meeting notes and Notion — just flag what you have on hand)
+Which sections do you have info ready for? (I'll pull what I can from your project tool, PRDs, meeting notes and docs — just flag what you have on hand)
 
 🧪 Background
   ☐ Background context — why is this experiment being run?
@@ -38,7 +40,7 @@ Which sections do you have info ready for? (I'll pull what I can from Linear, PR
 
 🎨 UX
   ☐ User stories (optional)
-  ☐ User flow (optional — Figma or Notion link?)
+  ☐ User flow (optional — design or doc link?)
   ☐ User Testing / Research — any usability work, or reasoning for skipping?
 
 ⚙️ Development
@@ -54,17 +56,17 @@ For each section the user flags as ready, ask them to paste the content inline. 
 
 ## Step 3 — Gather context (run in parallel)
 
-**A. Linear**
-Search for a matching issue or project using experiment name keywords:
-`list_issues` with `query: "[experiment keywords]"`, and `list_projects` with the same query.
+**A. Project management**
+Search for a matching item or project using experiment name keywords:
+`pm.search(keywords)` and `pm.projects(keywords)`.
 Extract: identifier, description, status, assignee, linked metrics or milestones.
 
 **B. Context/Document Hub/**
 Scan for any existing PRD, strategy doc, or prior experiment doc referencing this initiative. If found, reference it in the Background section.
 
-**C. Meeting notes and Notion**
+**C. Meeting notes and docs**
 - Scan `Context/Meeting Notes/` from the last 30 days for the experiment keywords
-- `notion-search` for related pages and read relevant ones with `notion-fetch`
+- `docs.search(keywords)`; read relevant pages with `docs.read`
 
 Extract: decisions made, scope discussions, open questions, metric targets mentioned.
 
@@ -75,7 +77,7 @@ Extract: decisions made, scope discussions, open questions, metric targets menti
 Use the template below. Apply these rules:
 
 - **User-provided content** → fill in directly, no marker needed
-- **Inferred from context (Linear/PRD/meeting notes/Notion)** → fill in with a note: *(from Linear)*, *(from meeting notes)* or *(from Notion)*
+- **Inferred from context** → fill in with a note naming the source: *(from project tool)*, *(from meeting notes)* or *(from docs)*
 - **Missing / not provided** → use `[To complete]` — never leave a required section blank without a marker
 - **Optional sections with nothing available** → use `[To complete — or mark as not applicable]`
 
@@ -87,7 +89,7 @@ title: [Experiment Name] — Experiment Doc
 description: "[~150 chars describing the experiment and its goal — used for future retrieval]"
 type: experiment-doc
 created_date: [YYYY-MM-DD]
-linear_issue: [key or TBD]
+tracking_item: [key or TBD]
 status: Planning
 ---
 
@@ -96,7 +98,7 @@ status: Planning
 | | |
 |---|---|
 | Driver | [default_driver from agent-config — override if specified] |
-| Linear issue | [title + key or TBD] |
+| Tracking item | [title + key or TBD] |
 | Created | [today's date] |
 | Status | Planning |
 
@@ -121,7 +123,7 @@ status: Planning
 [To complete — or: not applicable]
 
 ### User flow *(optional)*
-[To complete — or: [Figma/Notion link]]
+[To complete — or: [design or doc link]]
 
 ### User Testing / Research
 [Link to research, usability testing notes — or: "No user testing planned. Rationale: [___]"]
@@ -181,20 +183,20 @@ Display the full doc in chat, then show a compact summary:
 ```
 🧪 **Experiment doc saved — [Experiment Name]**
 Saved to: Context/Document Hub/[filename]
-Linear issue: [key or TBD]
+Tracking item: [key or TBD]
 
 **Sections filled:** [list sections with real content]
 **Needs input before sharing:** [list [To complete] sections that are required]
 **Fill later:** QA (before launch), Experiment results (post-experiment)
 ```
 
-Do NOT create a Notion page unless the user explicitly asks.
+Do NOT publish to the docs tool unless the user explicitly asks.
 
 ---
 
 ## Edge cases
 
-- **No Linear issue found:** Draft without it. Note at the top: *"No Linear issue linked — add before sharing."*
+- **No tracking item found:** Draft without it. Note at the top: *"No tracking item linked — add before sharing."*
 - **No UX info at all:** Mark the entire UX section `[To complete — UX section to be filled by design]` and flag it in the chat summary.
 - **PRD exists in Context/Document Hub/:** Reference it at the top of the Background section: *"Related PRD: [filename]"*
 - **User has everything ready:** Skip the readiness check and draft directly — the checklist is only needed when there's uncertainty about what's available.

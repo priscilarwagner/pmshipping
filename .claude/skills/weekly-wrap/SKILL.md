@@ -5,6 +5,8 @@ description: "Weekly review + compound learnings — review progress, surface bl
 
 # Weekly Wrap
 
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
+
 Run a structured weekly review, produce a shareable status update, then distill learnings into compounded knowledge.
 
 ## Instructions
@@ -30,9 +32,10 @@ Pull everything from the target week before synthesising anything.
    - Also flag `status: s` with no progress log entry in the last 7 days (stalled)
 4. **Goals** — read `GOALS.md` for quarterly objectives and top 3 priorities
 5. **Prior wrap** — read the most recent file in `Context/Progress Updates/` to compare trajectory
-6. **Connected tools** — if Linear and Gmail are available, pull the week's key activity:
-   - Linear: issues completed or moved this week (`list_issues`, `assignee: "me"`, `updatedAt: -P7D`), project updates posted
-   - Gmail (`in:inbox newer_than:7d -category:promotions -category:updates -category:social -category:forums` and `in:sent newer_than:7d`): decisions in threads, action items, blockers, escalations
+6. **Connected tools** — pull the week's key activity from whichever roles are configured:
+   - `pm.my_items_completed(7)` and `pm.my_items_updated(7)`; `pm.project_updates` for projects the user leads
+   - `email.inbox(7 days ago)` and `email.sent(7 days ago)`: decisions in threads, action items, blockers, escalations
+   - `comms.mentions(7 days ago)`, if configured
    - If tools are unavailable, note this and proceed — don't block the wrap
 
 ---

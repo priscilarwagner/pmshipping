@@ -1,13 +1,15 @@
 ---
 name: draft-prd
-description: "Draft a PRD using an AI-era PRD template (Opportunity Space + Solution Space). Pulls context from the Linear project, GOALS.md, meeting notes, Notion and existing docs. Saves to Context/Document Hub/ and shows in chat for review."
+description: "Draft a PRD using an AI-era PRD template (Opportunity Space + Solution Space). Pulls context from the project-management tool, GOALS.md, meeting notes, the docs tool and existing local docs. Saves to Context/Document Hub/ and shows in chat for review."
 ---
 
 # Draft PRD
 
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
+
 Draft a product requirements document following the AI-era PRD template below (Opportunity Space → Solution Space). Populate every required section from available context — leave optional sections clearly marked as [To complete].
 
-**Output:** Saved to `Context/Document Hub/[Initiative Name] PRD.md` + shown in chat for review. Move it to Notion only if the user explicitly asks.
+**Output:** Saved to `Context/Document Hub/[Initiative Name] PRD.md` + shown in chat for review. Publish it to the docs tool (`docs.create`) only if the user explicitly asks.
 
 ## Configuration
 
@@ -23,7 +25,7 @@ Read `Context/agent-config.md` at the start. Use:
 
 Extract from the request:
 - **Initiative name** — what is being built?
-- **Linear project** — is there an existing project or issue? (name, URL, or key)
+- **Project** — is there an existing project or item in the project-management tool? (name, URL, or key)
 - **Stage** — pre-kickoff (Opportunity Space only) or post-kickoff (full doc)?
 
 If initiative name is missing, ask before proceeding.
@@ -32,14 +34,14 @@ If initiative name is missing, ask before proceeding.
 
 ### Step 2 — Gather context (parallel)
 
-**A. Linear**
+**A. Project management**
 If a project is provided:
-- `get_project` — extract description, status, lead, target date
-- `list_milestones` — extract milestones
-- `list_issues` with `project: [project]` — extract issues for scope and key features
+- `pm.project(name)` — description, status, lead, target date
+- `pm.milestones(project)` — milestones
+- `pm.project_items(project, 90)` — items for scope and key features
 
 If no project:
-- `list_projects` and `list_issues` with `query: "[initiative keywords]"` — find anything related
+- `pm.projects(keywords)` and `pm.search(keywords)` — find anything related
 
 **B. GOALS.md**
 Read `GOALS.md` — identify which goal this initiative serves. Extract success metrics and strategic context.
@@ -47,9 +49,9 @@ Read `GOALS.md` — identify which goal this initiative serves. Extract success 
 **C. Context/Document Hub/**
 Scan for any existing PRD, strategy doc, or decision record referencing this initiative.
 
-**D. Meeting notes and Notion**
+**D. Meeting notes and docs**
 - Scan `Context/Meeting Notes/` from the last 30 days for the initiative name
-- `notion-search` for related pages (strategy docs, research, prior PRDs) and read the relevant ones with `notion-fetch`
+- `docs.search(keywords)` for related pages (strategy docs, research, prior PRDs); read the relevant ones with `docs.read`
 
 Extract: decisions made, scope discussions, open questions.
 
@@ -70,9 +72,9 @@ Follow the template structure exactly. Mark required sections clearly.
 |---|---|
 | Driver | [default_driver from agent-config — override if specified] |
 | Approver | [default_approver_name from agent-config — override if specified] |
-| Contributors | [from Linear project members / meeting context] |
+| Contributors | [from project members / meeting context] |
 | Informed | [from meeting / email context] |
-| Linear project | [name + link or TBD] |
+| Project | [name + link or TBD] |
 | Status | [Kicking off / Shaping / Building / Rollout] |
 
 ### Change log
@@ -86,7 +88,7 @@ Follow the template structure exactly. Mark required sections clearly.
 #### 1. Opportunity Space
 
 **🚀 Problem**
-[Why this matters for the business. Tie to company strategy. Pull from the Linear project description or GOALS.md.]
+[Why this matters for the business. Tie to company strategy. Pull from the project description or GOALS.md.]
 
 **Who: Target Users** ✅
 [Who are you building for? Be specific — logged-out users, Pro users, Enterprise admins, etc.]
@@ -108,7 +110,7 @@ Follow the template structure exactly. Mark required sections clearly.
 **🔍 Evidence**
 
 Supporting Data ✅
-[Pull from the Linear project, GOALS.md metrics, meeting notes or Notion docs. If none available: [Data needed]]
+[Pull from the project, GOALS.md metrics, meeting notes or docs. If none available: [Data needed]]
 
 Competitive Research *(encouraged)*
 [To complete]
@@ -216,19 +218,19 @@ Display the full PRD in chat, then show a compact summary:
 ```
 📄 **PRD saved — [Initiative Name]**
 Saved to: Context/Document Hub/[filename]
-Linear project: [name or TBD]
+Project: [name or TBD]
 
 **Sections completed:** [list required sections with real content]
 **Needs your input:** [list [To complete] or [Data needed] sections]
 ```
 
-Do NOT create a Notion page unless the user explicitly asks.
+Do NOT publish to the docs tool unless the user explicitly asks.
 
 ---
 
 ## Edge cases
 
-- **No Linear project**: draft from GOALS.md + request context only. Flag clearly: *"No Linear project found — create one and link after review."*
+- **No project found**: draft from GOALS.md + request context only. Flag clearly: *"No project found — create one and link after review."*
 - **Pre-kickoff only**: draft Opportunity Space only. Note: *"Solution Space left blank — complete after kickoff."*
 - **AI feature**: always include Eval Strategy section, even partially filled.
 - **Existing doc found**: note it at the top — *"Existing doc found at [path] — this draft builds on it."*

@@ -6,6 +6,8 @@ Your agent reads your goals, remembers your preferences, and learns from every w
 
 Works with **Claude Code Desktop**, **Claude Code CLI**, **Claude Co-Work**, **Cursor**, or any AI tool that reads local files.
 
+**Bring your own tools.** Skills are tool-agnostic. `/onboard` asks which tool you use for project management, email, calendar, docs, files and comms, and saves the answers in `Context/agent-config.md`. Every skill reads that file and talks to your tools through an adapter in `.claude/adapters/`. Adapters ship for Linear, Gmail, Google Calendar, Notion and Google Drive (tested), plus Jira, Outlook, Confluence and Slack (untested recipes). Any other tool: copy `_template.md`. Switch tools later by editing one row.
+
 ---
 
 ## What It Does
@@ -15,16 +17,16 @@ Works with **Claude Code Desktop**, **Claude Code CLI**, **Claude Co-Work**, **C
 - Log weekly achievements automatically from your project management and comms tools — your performance review cycle becomes copy-paste
 - Track growth behaviours (AI judgment, strategic leverage, visible prioritisation, signal-first comms) with evidence as you go
 - Run a bias audit on any decision against your motivational profile
-- Get a structured morning briefing every day — calendar, Linear, and overnight email in one place
+- Get a structured morning briefing every day — calendar, project tool, and overnight email in one place
 
 ### 📄 Generate product and experiment docs
-- Draft PRDs, experiment docs, and project updates from Linear, meeting notes, Notion, and your existing docs
+- Draft PRDs, experiment docs, and project updates from your project tool, meeting notes, docs, and existing files
 - Multi-perspective steelmanning of any document — 3–5 critique lenses run in parallel to surface blind spots before you share
 - Draft emails, short messages, and strategy docs in your own voice
 
 ### ⚡ Make meetings and tasks efficient
 - Digest the day's meetings: extract decisions and action items from your notes, save structured notes
-- Morning briefing saved automatically at 8:30am — focus items, overdue Linear issues, overnight email
+- Morning briefing saved automatically at 8:30am — focus items, overdue items, overnight email
 - 1:1 prep with full talking points generated from notes, tasks, and ongoing relationship docs
 - Weekly and daily planning that reads from your goals, not a blank slate
 
@@ -85,7 +87,7 @@ Everything the agent does is grounded in these two files. Fill them in once; all
 ### 4. Start using it
 
 **Daily:**
-- `/today` — daily plan from your weekly scratchpad, calendar, Linear, and overnight email
+- `/today` — daily plan from your weekly scratchpad, calendar, project tool, and overnight email
 - `/morning-briefing` — saves a compact brief to `Notes/Briefings/` at 8:30am (can run automatically)
 - Drop items into `BACKLOG.md` → `/backlog` to triage into structured tasks
 
@@ -104,7 +106,7 @@ Everything the agent does is grounded in these two files. Fill them in once; all
 - `/draft-meeting-minutes` — structured minutes from transcript or description
 
 **Product & experiment docs:**
-- `/draft-prd [initiative]` — PRD from the Linear project, GOALS.md, meeting notes, and Notion
+- `/draft-prd [initiative]` — PRD from your project tool, GOALS.md, meeting notes, and docs
 - `/draft-experiment-doc [name]` — experiment doc following your company's experiment doc structure
 - `/draft-goal-update` — monthly progress comment for a goal ticket
 - `/draft [topic]` — email, short message, or strategy doc in your voice
@@ -148,7 +150,8 @@ pmshipping/
 ├── Notes/                        # Daily notes and thinking
 ├── Bookmarks/                    # Reading list and saved links
 │
-└── .claude/skills/               # Slash commands (auto-discovered)
+├── .claude/adapters/             # One adapter per tool (Linear, Jira, Gmail, Outlook, Notion…)
+└── .claude/skills/               # Slash commands (auto-discovered, tool-agnostic)
     ├── onboard/                  # /onboard — first-time setup + agent-config
     ├── today/                    # /today — daily planning
     ├── plan-week/                # /plan-week — weekly planning
@@ -160,7 +163,7 @@ pmshipping/
     ├── meeting-digest/           # /meeting-digest — meetings → notes + action items
     ├── draft-meeting-minutes/    # /draft-meeting-minutes — structured minutes
     ├── draft/                    # /draft — universal drafting router
-    ├── draft-prd/                # /draft-prd — PRD from Linear + Notion context
+    ├── draft-prd/                # /draft-prd — PRD from project + docs context
     ├── draft-experiment-doc/     # /draft-experiment-doc — live experiment doc structure
     ├── draft-goal-update/        # /draft-goal-update — monthly goal comment
     ├── steelman-advice/          # /steelman-advice — multi-perspective document critique
@@ -214,7 +217,7 @@ All skills are generic — no personal data is hardcoded. Each user sets up two 
 - **`Context/agent-config.md`** — tool stack, timezone, default document names
 - **`Context/[Your Company Goals].md`** — your review cycle goals, milestone hierarchy, growth areas (replace with your company's format)
 
-To give a teammate access: share the `.claude/skills/` folder. They run `/onboard` and fill in their own config. All skills work from their context, not yours.
+To give a teammate access: share the `.claude/skills/` and `.claude/adapters/` folders. They run `/onboard` and fill in their own config. All skills work from their context, not yours.
 
 ---
 
@@ -239,7 +242,7 @@ Some skills run on a schedule without being triggered manually.
 
 ### Morning Briefing (daily, 8:30am)
 
-`/morning-briefing` can run every weekday morning via macOS launchd. It pulls calendar, Linear, and overnight email, picks 3 focus items, and saves a compact brief to `Notes/Briefings/`.
+`/morning-briefing` can run every weekday morning via macOS launchd. It pulls calendar, project tool, and overnight email, picks 3 focus items, and saves a compact brief to `Notes/Briefings/`.
 
 **Setup files:**
 - `~/.claude/scripts/morning-briefing.sh` — shell wrapper
@@ -259,7 +262,7 @@ launchctl unload ~/Library/LaunchAgents/com.yourname.morning-briefing.plist
 
 ### Meeting Digest (on demand)
 
-`/meeting-digest` reads the day's meetings from Google Calendar and digests whatever notes exist (local, Notion, or pasted). Run it at the end of the day. Fully idempotent — safe to run multiple times.
+`/meeting-digest` reads the day's meetings from your calendar and digests whatever notes exist, from the sources you set in agent-config (attached notes, docs, local, or pasted). Run it at the end of the day. Fully idempotent — safe to run multiple times.
 
 ---
 
@@ -280,7 +283,7 @@ description: "What this skill does and when to use it"
 [Steps for the agent to follow]
 ```
 
-Run it with `/my-skill`. Skills can read any file in the workspace, call connected tools (Linear, Gmail, Google Calendar, Notion), and write output back to your files.
+Run it with `/my-skill`. Skills can read any file in the workspace, call your tools through role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*` — see `.claude/adapters/README.md`), and write output back to your files.
 
 **Ideas:** `/status-update` · `/retro` · `/goal-alignment` · `/brainstorm [topic]` · `/promo-doc`
 

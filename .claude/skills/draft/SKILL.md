@@ -5,6 +5,8 @@ description: "Universal drafting router — detects what type of draft is needed
 
 # Draft
 
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
+
 Detect the type of content needed, apply the right template, draft it in the user's voice, and show the result in chat. Nothing is sent or published unless the user explicitly asks.
 
 ---
@@ -15,7 +17,7 @@ Read the request and classify into one of these types:
 
 | Type | Signals |
 |------|---------|
-| `goal_update` | A Linear project or goal mentioned; "goal", "progress update", "status update", "project update", "monthly update" |
+| `goal_update` | A project or goal mentioned; "goal", "progress update", "status update", "project update", "monthly update" |
 | `prd` | "PRD", "product requirements", "initiative brief", "kickoff doc", "feature spec", "product brief" |
 | `meeting_minutes` | "meeting notes", "minutes", "recap", "notes from [meeting]", "what was discussed", "write up the meeting" |
 | `email` | "email", "reply to [person]", "write to [person]", "message to [email]" |
@@ -64,7 +66,7 @@ Subject: [suggested subject]
 
 [Full email text]
 ```
-Say "create a draft" to save it as a Gmail draft, or "send it" to send.
+Say "create a draft" to save it with `email.draft`, or "send it" to send.
 
 ---
 
@@ -140,7 +142,7 @@ Saved to: Context/Document Hub/[filename]
 
 [TL;DR text]
 ```
-Say "move to Notion" to publish it there.
+Say "publish it" to create it in the docs tool (`docs.create`).
 
 ---
 
@@ -158,4 +160,4 @@ Read `Context/Memory/brain.md` before drafting. Apply these always:
 
 ## Output rule
 
-All draft types show output in chat. Never send, post or publish automatically — only act if the user explicitly asks (e.g. "send it", "create a Gmail draft", "move to Notion").
+All draft types show output in chat. Never send, post or publish automatically — only act if the user explicitly asks (e.g. "send it", "create a draft", "publish it").

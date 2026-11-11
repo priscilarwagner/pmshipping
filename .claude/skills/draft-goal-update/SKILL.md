@@ -1,11 +1,13 @@
 ---
 name: draft-goal-update
-description: "Draft a progress update for a goal or project. Gathers context from the Linear project, its issues and milestones, meeting notes and email. Checks for the approver's sign-off. Shows the draft in chat before anything is written to Linear."
+description: "Draft a progress update for a goal or project. Gathers context from the project in the project-management tool, its items and milestones, meeting notes and email. Checks for the approver's sign-off. Shows the draft in chat before anything is written."
 ---
 
 # Draft Goal Update
 
-Draft the periodic progress update for a goal tracked as a Linear project, following the project's existing update format. Always show in chat for review — never write to Linear until the user confirms.
+> **Tools:** steps call role operations (`pm.*`, `email.*`, `calendar.*`, `docs.*`, `files.*`, `comms.*`). Resolve each through `Context/agent-config.md` → **Tool Stack** and the adapter it names (`.claude/adapters/README.md`). A role set to `none` → skip that step.
+
+Draft the periodic progress update for a goal tracked as a project in the project-management tool, following the project's existing update format. Always show in chat for review — never write until the user confirms.
 
 ---
 
@@ -13,7 +15,7 @@ Draft the periodic progress update for a goal tracked as a Linear project, follo
 
 Read at the start:
 - `Context/agent-config.md` — for default approver details and the goals file path
-- The goals file referenced in agent-config — for the current goal → Linear project map
+- The goals file referenced in agent-config — for the current goal → project map
 
 Do not hardcode goal or project names here.
 
@@ -23,30 +25,30 @@ Do not hardcode goal or project names here.
 
 ### Step 1 — Resolve the project
 
-If a Linear project name or URL was passed as an argument, use it directly.
-If only a goal name was passed, match it to the goals file, then find the project with `list_projects` (query by name).
+If a project name or URL was passed as an argument, use it directly.
+If only a goal name was passed, match it to the goals file, then find it with `pm.projects(name)`.
 If neither, ask which goal or project this update is for.
 
 ---
 
-### Step 2 — Fetch Linear context (parallel)
+### Step 2 — Fetch project context (parallel)
 
 Run all of these in parallel:
 
 **A. Project details**
-Call `get_project`. Extract:
+`pm.project(name)`. Extract:
 - Project description / scope and target date
 - Target metric and current value (if in description)
 - Current status and health
 
 **B. Milestones**
-Call `list_milestones` for the project. Note each milestone's status and target date.
+`pm.milestones(project)`. Note each milestone's status and target date.
 
 **C. Previous updates — extract the template**
-Call `get_status_updates` for the project. Find the most recent update. Extract the exact heading format being used and use that structure for the new draft — do not invent a new format.
+`pm.project_updates(project)`. Find the most recent update. Extract the exact heading format being used and use that structure for the new draft — do not invent a new format.
 
 **D. Issues moved in the last 30 days**
-Call `list_issues` with `project: [project]` and `updatedAt: -P30D`. Extract: what was completed, what's in progress, any blockers (blocked status or blocking relations).
+`pm.project_items(project, 30)`. Extract: what was completed, what's in progress, any blockers (blocked status or blocking relations).
 
 ---
 
@@ -58,7 +60,7 @@ Scan `Context/Meeting Notes/` for files from the past 30 days containing the goa
 **B. Approver sign-off check**
 Use `default_approver_name` from `Context/agent-config.md`. Search:
 - Meeting notes from the past 30 days that mention the approver and this goal
-- Gmail: `search_threads` with `from:[approver] [goal keywords] newer_than:30d`, plus threads between the user and the approver
+- `email.with(approver, 30)` filtered to goal keywords; `comms.search(approver + goal keywords, 30 days ago)` if configured
 
 Classify the sign-off as one of:
 - ✅ **Signed off** — explicit approval or agreement on scope/decision. Quote it.
@@ -123,14 +125,14 @@ Suggested health: [On track / At risk / Off track] — [reason]
 [Full update text]
 ```
 
-Do NOT write to Linear until the user confirms. On confirmation, call `save_status_update` on the project with the update text and health.
+Do NOT write until the user confirms. On confirmation, `pm.post_update(project, text, health)`.
 
 ---
 
 ## Edge cases
 
 - **No previous update found**: use the default structure above and say so in the draft header.
-- **Project not found in Linear**: *"⚠️ Couldn't find [project] in Linear. Check the name and try again."*
+- **Project not found**: *"⚠️ Couldn't find [project] in your project tool. Check the name and try again."*
 - **No issues moved this period**: note it in the draft context but do not block — draft from the project description, milestones and meeting notes.
 - **Approver sign-off not found**: show the ❌ flag prominently. Do not block the draft.
 - **Metric data missing**: write `[metric?]` in the Progress Update section rather than inventing a number.
