@@ -44,7 +44,7 @@ project/
 | `Tasks/Backlog/` | One .md per shaped initiative/track. Strategic context, decisions, frameworks. | When planning the week, running `/weekly-wrap`, or activating a new initiative |
 | `Context/Memory/` | Persistent facts, preferences, decisions, and distilled learnings | Always check at session start; update when you learn something new about the user |
 | `Context/Memory/brain.md` | Deep map of how the user thinks, decides, communicates — mental models, principles, voice, relationships | Read before any drafting, planning, or decision-support. Update when new patterns emerge. |
-| `Context/Memory/bias.md` | Marlee motivational profile — drives communication style and bias-calling logic | Read at session start if it exists; apply communication rules and watch for bias patterns |
+| `Context/Memory/bias.md` | Motivational profile (from any assessment, or drafted from `brain.md`) — drives communication style and bias-calling logic | Read at session start if it exists; apply communication rules and watch for bias patterns |
 | `Context/Memory/learnings.md` | Compounded weekly insights — patterns, lessons, and principles | Reference when giving advice; updated automatically by `/weekly-wrap` |
 | `Context/Memory/Reference/` | Writing-style guides, strategic frameworks, company context | Before running `/draft`, `/review`, or any writing/strategy skill |
 | `Context/Memory/Reference/writing-styles/` | Voice guides for different content types (email, short messages, strategy) | When drafting content — `/draft` reads these automatically |
@@ -239,10 +239,12 @@ To add a new skill: create `.claude/skills/<name>/SKILL.md` with YAML frontmatte
 - **Recurring decisions**: Standing priorities, delegation patterns, review cadences
 - **Learnings**: Distilled weekly insights in `learnings.md` — patterns, lessons, and principles that compound over time
 - **The user's Brain**: `brain.md` — deep map of how the user thinks, decides, communicates, and operates. Read this before any drafting, planning, or decision-support task. Update when new reasoning patterns emerge.
-- **Bias profile**: Marlee motivational profile in `bias.md` — blind spots, communication rules, bias patterns to watch for
+- **Bias profile**: motivational profile in `bias.md` — blind spots, communication rules, bias patterns to watch for
 - **Reference material**: `Reference/writing-styles/` for voice guides by content type, `Reference/frameworks/` for strategic frameworks
 
 `Context/121s/` stores ongoing 1:1 relationship docs — open loops and session logs that carry forward across meetings. Created and updated by `/121` and `/today`.
+
+**Optional files:** `brain.md`, `bias.md`, `learnings.md` and `Context/121s/` docs don't exist on a fresh install. When a skill says to read one that's missing, skip it and use the defaults in this file; offer once to start it.
 
 **When to read:** Check `Context/Memory/` at the start of any session that involves planning, writing, or prioritization. Always read `brain.md` before drafting, advising, or making decisions on the user's behalf. Check `Context/121s/` when prepping meetings.
 

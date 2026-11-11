@@ -432,7 +432,7 @@ function selectNode(d, edges) {
   const typeColor = COLOR[d.type] || '#888';
   const detail = document.getElementById('node-detail');
   detail.innerHTML = `
-    <div class="detail-type" style="color:${typeColor}">${d.type.replace('-', ' ').replace('pri idea', 'my idea')}</div>
+    <div class="detail-type" style="color:${typeColor}">${d.type.replace('-', ' ')}</div>
     <div class="detail-label">${esc(d.label)}</div>
     <div class="detail-content">${esc(d.content)}</div>
     <div class="detail-meta">${d.date ? `📅 ${esc(d.date)}` : ''} ${d.author ? `· 👤 ${esc(d.author)}` : ''} ${d.channel ? `· ${esc(d.channel)}` : ''} ${d.source ? `· 📄 ${esc(d.source)}` : ''}</div>

@@ -35,7 +35,7 @@ Start from concrete state and signals, then layer in goals and learnings at the 
    - If the pm role is `none`, skip silently
 6. **Last week's meetings** — read `Context/Meeting Notes/` files from last Monday–Friday, plus the other **Meeting notes sources** in agent-config:
    - Extract: unresolved action items, decisions that affect this week's priorities, open questions
-7. **Email** — `email.inbox(last Thursday)`: decisions, escalations, deadlines, interview or recruiter threads
+7. **Email** — `email.inbox(last Thursday)`: decisions, escalations, deadlines, threads from priority senders
 6. Read `Context/Memory/learnings.md` — scan recent entries for patterns that should inform this week's plan (e.g., recurring blockers, drift, process improvements)
 7. Check `Context/Memory/` for preferences that affect planning
 8. Read `GOALS.md` — quarterly objectives, top 3 priorities. Use as an alignment filter on the concrete context already gathered, not the starting frame

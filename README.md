@@ -15,7 +15,7 @@ Works with **Claude Code Desktop**, **Claude Code CLI**, **Claude Co-Work**, **C
 ### 🎯 Keep your career on track
 - Map every task and milestone to your performance review cycle goals
 - Log weekly achievements automatically from your project management and comms tools — your performance review cycle becomes copy-paste
-- Track growth behaviours (AI judgment, strategic leverage, visible prioritisation, signal-first comms) with evidence as you go
+- Track the growth behaviours you define in your goals file, with evidence as you go
 - Run a bias audit on any decision against your motivational profile
 - Get a structured morning briefing every day — calendar, project tool, and overnight email in one place
 

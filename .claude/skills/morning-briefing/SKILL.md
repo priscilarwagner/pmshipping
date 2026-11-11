@@ -44,7 +44,7 @@ Compute today's date and yesterday's date using the timezone from `Context/agent
 Deduplicate by issue identifier. Max 8 issues total.
 
 **Email** — `email.inbox(since yesterday)`, keeping mail from 6pm yesterday onwards.
-Extract: questions directed at the user, decisions or deadlines (interviews, recruiters, offers, contracts), anything blocking someone. Ignore newsletters, receipts and automated notifications (`no-reply`, `noreply`, `notifications@`) unless they carry a deadline.
+Extract: questions directed at the user, decisions or deadlines, asks from priority senders (listed in `Context/Memory/`), anything blocking someone. Ignore newsletters, receipts and automated notifications (`no-reply`, `noreply`, `notifications@`) unless they carry a deadline.
 
 **Draft request detection** — while scanning email, flag any thread that asks the user for something matching these patterns:
 
